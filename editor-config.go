@@ -1,63 +1,10 @@
-package tabulator
-
-/*
-
-export interface EditorConfig {
-  info: {
-    setupTitle: string;
-    currentVersion?: Version;
-    createdInVersion?: Version;
-  };
-  options: {
-    rendererVersion: "v1" | "v2";
-    ///Determines if grids are printed in just excel, pdf, both, or neither when in sheets mode
-    gridPrint: "never" | "pdf" | "xlsx" | "always";
-    guides: boolean;
-    showGrid?: boolean;
-    tables: TableEditorConfig;
-    fieldDefaults: FieldDefaults;
-    livePreview?: boolean;
-    canvas: {
-      limitDimensions: {
-        x: boolean;
-        y: boolean;
-      };
-      dimensions: Dimensions;
-      useWorksheets: boolean;
-      usePages?: boolean;
-      useWebPages?: boolean;
-    };
-  };
-}
-*/
-// export interface Version {
-// 	full: string; // 2.54.4,
-// 	major: string; //2,
-// 	minor: string; //54,
-// 	dot: string; //4
-//   }
-
-// interface TableEditorConfig {
-//   showDataDefinition: boolean;
-//   equalizeColumns: boolean;
-//   defaultToSnapping: boolean;
-//   defaultToRunning: boolean;
-// }
-
-// export interface FieldDefaults {
-//   height: number;
-//   width: number;
-//   /** in pixels, i.e. "0px" */
-//   padding: string;
-//   removeWhiteSpace?: boolean;
-//   useFieldText?: boolean;
-// }
+package main
 
 type Version struct {
 	Full  string `json:"full"`
-	Major string `json:"major"`
-	Minor string `json:"minor"`
-	Dot   string `json:"dot"`
+	Major int    `json:"major,string"`
+	Minor int    `json:"minor,string"`
+	Dot   int    `json:"dot,string"`
 }
 
 type TableEditorConfig struct {
@@ -76,8 +23,8 @@ type FieldDefaults struct {
 }
 
 type Dimensions struct {
-	Width  int    `json:"width"`
-	Height int    `json:"height"`
+	Width  int    `json:"width,string"`
+	Height int    `json:"height,string"`
 	Unit   string `json:"unit"`
 }
 

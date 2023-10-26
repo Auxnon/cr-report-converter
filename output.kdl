@@ -1,0 +1,16 @@
+master platformwaittime=0 rendertime=0 {
+	editorconfig {
+		info setuptitle="Report Document" {
+			currentversion major="2" minor="69" dot="1" full="2.69.1"
+			createdinversion full="2.67.1" major="2" minor="67" dot="1"
+		}
+		options rendererversion="v2" gridprint="always" guides=false showgrid=false livepreview=false {
+			tables equalizecolumns=false defaulttosnapping=true defaulttorunning=true showdatadefinition=true
+			fielddefaults usefieldtext=true height=28 width=140 padding="2px 4px" removewhitespace=false
+			canvas usewebpages=false useworksheets=false usepages=false {
+				limitdimensions x=true y=true
+				dimensions height=1000 unit="px" width=1600
+			}
+		}
+	}
+}

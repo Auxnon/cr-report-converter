@@ -1,15 +1,24 @@
-package tabulator
+package main
 
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
+	kdl "github.com/sblinch/kdl-go"
 	"golang.org/x/net/html"
 )
 
 type AttrMap map[string]string
+
+type MastConfig struct {
+	EditorConfig     EditorConfig
+	RenderTime       int
+	PlatformWaitTime int
+}
 
 //export In
 func In(doc string) string {
@@ -18,17 +27,18 @@ func In(doc string) string {
 
 func converter(doc string) string {
 	d := html.NewTokenizer(strings.NewReader(doc))
-	return parser(d)
+	str := ""
 
+	for {
+		running, bits := parseNode(d)
+		if !running {
+			return str
+		}
+		if len(bits) > 0 {
+			str += string(bits)
+		}
+	}
 }
-
-// func getClass(t html.Token) string {
-// 	return t.Attr["class"].Val
-// }
-
-// func getAttr(t html.Token, attr string) string {
-// 	return t.Attr[attr].Val
-// }
 
 func getAttrMap(t html.Token) map[string]string {
 	mapAttr := make(map[string]string)
@@ -38,63 +48,99 @@ func getAttrMap(t html.Token) map[string]string {
 	return mapAttr
 }
 
-// func hasClass(t html.Token, class string) bool {
-// 	s := getClass(t)
-// 	return strings.Contains(s, class)
-// }
-
-func parser(root *html.Tokenizer) string {
+func parser(fileOut *os.File, root *html.Tokenizer) {
 	for {
-
-		tt := root.Next()
-		switch {
-
-		case tt == html.ErrorToken:
-			return ""
-
-		case tt == html.StartTagToken:
-			t := root.Token()
-			tmap := getAttrMap(t)
-
-			class := tmap["class"]
-			switch {
-			case strings.Contains(class, "report-master-meta"):
-				return parseMasterConfig(t, tmap)
-			case strings.Contains(class, "page"):
-				return parsePage(t, tmap)
+		running, bits := parseNode(root)
+		if !running {
+			return
+		}
+		if len(bits) > 0 {
+			if _, err := fileOut.Write(bits); err != nil {
+				panic(err)
 			}
 		}
 	}
-	// return ""
 }
 
-func parseMasterConfig(element html.Token, attrMap AttrMap) string {
-	editorConfigStr := attrMap["data-editor-config"]
-	var editorConfig EditorConfig
-	if editorConfigStr != "" {
-		editorConfigStr = html.UnescapeString(editorConfigStr)
-		err := json.Unmarshal([]byte(editorConfigStr), &editorConfig)
-		if err != nil {
-			fmt.Println(err)
+func parseNode(root *html.Tokenizer) (bool, []byte) {
+	tt := root.Next()
+	var bits []byte
+	switch {
+
+	case tt == html.ErrorToken:
+		return false, bits
+
+	case tt == html.StartTagToken:
+		t := root.Token()
+		tmap := getAttrMap(t)
+
+		class := tmap["class"]
+		switch {
+		case strings.Contains(class, "report-master-meta"):
+			bits = parseMasterConfig(t, tmap)
+		case strings.Contains(class, "page"):
+			bits = parsePage(t, tmap)
 		}
 	}
-	// renderTime := attrMap["data-render-time"]
-	// platformWaitTime := attrMap["data-platform-wait-time"]
-	return ""
+	return true, bits
 }
 
-func parsePage(element html.Token, attrMap AttrMap) string {
-	return ""
+func parseMasterConfig(element html.Token, attrMap AttrMap) []byte {
+	editorConfigStr := attrMap["data-editor-config"]
+	fmt.Println(editorConfigStr, "\n")
+	var editorConfig EditorConfig
+
+	if editorConfigStr != "" {
+		editorConfigStr, err := url.QueryUnescape(editorConfigStr)
+		if err != nil {
+			fmt.Println("parseMasterConfig:", err)
+		}
+		fmt.Println(editorConfigStr)
+
+		if err = json.Unmarshal([]byte(editorConfigStr), &editorConfig); err != nil {
+			fmt.Println("parseMasterConfig:", err)
+		}
+	}
+
+	master := MastConfig{
+		EditorConfig:     editorConfig,
+		RenderTime:       unwrap(strconv.Atoi(attrMap["data-render-time"])),
+		PlatformWaitTime: unwrap(strconv.Atoi(attrMap["data-platform-wait-time"])),
+	}
+	out, er := kdl.Marshal(struct {
+		MastConfig MastConfig `kdl:"master"`
+	}{
+		MastConfig: master,
+	})
+	if er != nil {
+		fmt.Println("parseMasterConfig:", er)
+	}
+	return out
+}
+
+// unwrap multiple return to non error type, ignoring error
+func unwrap[T any](x T, e error) T {
+	return x
+}
+
+func parsePage(element html.Token, attrMap AttrMap) []byte {
+	return []byte{}
 }
 
 func main() {
-	// load test
 	r, _ := os.Open("test.html")
 	defer r.Close()
 
-	out := parser(html.NewTokenizer(r))
-	println(out)
-	// z := html.NewTokenizer(r)
-	// fmt.Println("yup")
-	// html.EscapeString(os.Stdout, "<script>alert('you have been pwned')</script>")
+	fo, err := os.Create("output.kdl")
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if err := fo.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	parser(fo, html.NewTokenizer(r))
+
 }
