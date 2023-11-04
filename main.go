@@ -25,8 +25,18 @@ func In(doc string) string {
 	return converter(doc)
 }
 
+// im
+func ErrOut(err error) string {
+	return err.Error()
+}
+
 func converter(doc string) string {
-	d := html.NewTokenizer(strings.NewReader(doc))
+	d, err := html.Parse(strings.NewReader(doc))
+	if err != nil {
+
+		return ""
+	}
+
 	str := ""
 
 	for {
@@ -40,7 +50,7 @@ func converter(doc string) string {
 	}
 }
 
-func getAttrMap(t html.Token) map[string]string {
+func getAttrMap(t *html.Node) map[string]string {
 	mapAttr := make(map[string]string)
 	for _, a := range t.Attr {
 		mapAttr[a.Key] = a.Val
@@ -48,7 +58,7 @@ func getAttrMap(t html.Token) map[string]string {
 	return mapAttr
 }
 
-func parser(fileOut *os.File, root *html.Tokenizer) {
+func parser(fileOut *os.File, root *html.Node) {
 	for {
 		running, bits := parseNode(root)
 		if !running {
@@ -62,30 +72,33 @@ func parser(fileOut *os.File, root *html.Tokenizer) {
 	}
 }
 
-func parseNode(root *html.Tokenizer) (bool, []byte) {
-	tt := root.Next()
+func parseNode(root *html.Node) (bool, []byte) {
+
+	tt := root.NextSibling
+
 	var bits []byte
 	switch {
 
-	case tt == html.ErrorToken:
+	case tt.Type == html.ErrorNode:
 		return false, bits
 
-	case tt == html.StartTagToken:
-		t := root.Token()
-		tmap := getAttrMap(t)
+	case tt.Type == html.ElementNode:
+
+		// t := html.Parse
+		tmap := getAttrMap(tt)
 
 		class := tmap["class"]
 		switch {
 		case strings.Contains(class, "report-master-meta"):
-			bits = parseMasterConfig(t, tmap)
+			bits = parseMasterConfig(tt, tmap)
 		case strings.Contains(class, "page"):
-			bits = parsePage(t, tmap)
+			bits = parsePage(tt, tmap)
 		}
 	}
 	return true, bits
 }
 
-func parseMasterConfig(element html.Token, attrMap AttrMap) []byte {
+func parseMasterConfig(element *html.Node, attrMap AttrMap) []byte {
 	editorConfigStr := attrMap["data-editor-config"]
 	fmt.Println(editorConfigStr, "\n")
 	var editorConfig EditorConfig
@@ -123,7 +136,28 @@ func unwrap[T any](x T, e error) T {
 	return x
 }
 
-func parsePage(element html.Token, attrMap AttrMap) []byte {
+func parsePage(element *html.Node, attrMap AttrMap) []byte {
+	// tt := element.Next()
+	// var bits []byte
+	// switch {
+
+	// case tt == html.ErrorToken:
+	// 	return false, bits
+
+	// case tt == html.StartTagToken:
+	// 	t := root.Token()
+	// 	tmap := getAttrMap(t)
+
+	// 	class := tmap["class"]
+	// 	switch {
+	// 	case strings.Contains(class, "report-master-meta"):
+	// 		bits = parseMasterConfig(t, tmap)
+	// 	case strings.Contains(class, "page"):
+	// 		bits = parsePage(t, tmap)
+	// 	}
+	// }
+	// return true, bits
+
 	return []byte{}
 }
 
@@ -141,6 +175,35 @@ func main() {
 		}
 	}()
 
-	parser(fo, html.NewTokenizer(r))
+	// pageHeader := PageHeader{
+	// 	height:          0,
+	// 	backgroundColor: "",
+	// }
+	// viz := Viz{
+	// 	component: Component{
+	// 		Height: 0,
+	// 		Width:  0,
+	// 		x:      0,
+	// 		y:      0,
+	// 		id:     "",
+	// 	},
+	// 	image: Base64Image{
+	// 		height: 0,
+	// 		width:  0,
+	// 		image:  "",
+	// 	},
+	// }
+	// arr := []interface{}{pageHeader, viz}
+	// var g = reflect.TypeOf(arr[0])
+
+	// g.
+
+	// get children
+	doc, er := html.Parse(r)
+	if er != nil {
+		panic(er)
+	}
+
+	parser(fo, doc)
 
 }
