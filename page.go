@@ -1,11 +1,14 @@
 package main
 
 type Page struct {
-	height          int
-	width           int
-	id              string
-	backgroundColor string
-	contents        []interface{}
+	Height          int
+	Width           int
+	Id              string
+	BackgroundColor string
+	TableSection    []TableSection `kdl:",omitempty,multiple,child"`
+	// Viz             Viz   `kdl:",omitempty,child,multiple"`
+	Contents []interface{} `kdl:",omitempty"`
+	// children []interface{}
 }
 
 type PageHeader struct {

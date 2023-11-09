@@ -1,30 +1,30 @@
 package main
 
 type Component struct {
-	Height int
-	Width  int
-	x      int
-	y      int
-	id     string
+	Height int    `kdl:"height"`
+	Width  int    `kdl:"width"`
+	X      int    `kdl:"x"`
+	Y      int    `kdl:"y"`
+	Id     string `kdl:"id"`
 }
 
 type Base64Image struct {
-	height int
-	width  int
-	image  string
+	Height int
+	Width  int
+	Data   string
 }
 
 type Viz struct {
-	component Component
-	image     Base64Image
+	Component Component   `kdl:"component"`
+	Image     Base64Image `kdl:"image"`
 }
 
 const TABLE_SECTION_STYLES = "position: absolute; overflow: visible;"
 const CELL_STYLES = "padding: 2px 4px;"
 
 type TableSection struct {
-	component Component
-	contents  []interface{}
+	Component Component `kdl:",props"`
+	// Contents  []interface{}
 }
 
 type Table struct {
